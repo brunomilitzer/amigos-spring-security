@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import static com.brunomilitzer.demo.security.UserPermission.COURSES_WRITE;
 import static com.brunomilitzer.demo.security.UserRole.ADMIN;
@@ -37,7 +38,9 @@ public class ApplicationSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain( final HttpSecurity http ) throws Exception {
-        http.csrf().disable()
+        http
+                //.csrf(csrf -> csrf.csrfTokenRepository( CookieCsrfTokenRepository.withHttpOnlyFalse() )) // Use for production
+                .csrf().disable()
                 .authorizeHttpRequests()
                 .antMatchers( "/", "index", "/css/*", "/js/*" ).permitAll()
                 .antMatchers( "/api/**" ).hasRole( STUDENT.name() )

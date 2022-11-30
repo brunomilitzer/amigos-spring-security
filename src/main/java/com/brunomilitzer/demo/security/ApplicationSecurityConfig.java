@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.brunomilitzer.demo.security.UserPermission.COURSES_WRITE;
 import static com.brunomilitzer.demo.security.UserRole.ADMIN;
@@ -52,7 +55,21 @@ public class ApplicationSecurityConfig {
                 .hasAuthority( COURSES_WRITE.getPermission() )
                 .antMatchers( GET, "/management/api/**" ).hasAnyRole( ADMIN.name(), ADMIN_TRAINEE.name() )
                 .anyRequest().authenticated()
-                .and().httpBasic();
+                .and().formLogin()
+                .loginPage( "/login" ).permitAll()
+                .defaultSuccessUrl( "/courses", true )
+                .passwordParameter( "password" )
+                .usernameParameter( "username" )
+                .and().rememberMe().tokenValiditySeconds( (int) TimeUnit.DAYS.toSeconds( 21 ) )
+                .key( "somethingverysecured" ) // defaults to 2 weeks
+                .rememberMeParameter( "remember-me" )
+                .and().logout()
+                .logoutUrl( "/logout" )
+                .logoutRequestMatcher( new AntPathRequestMatcher( "/logout", "POST" ) )
+                .clearAuthentication( true )
+                .invalidateHttpSession( true )
+                .deleteCookies( "JSESSIONID", "remember-me" )
+                .logoutSuccessUrl( "/login" );
 
         return http.build();
     }

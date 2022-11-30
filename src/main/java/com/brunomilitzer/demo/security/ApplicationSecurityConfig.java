@@ -1,19 +1,17 @@
 package com.brunomilitzer.demo.security;
 
+import com.brunomilitzer.demo.auth.ApplicationUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.util.concurrent.TimeUnit;
@@ -34,9 +32,13 @@ public class ApplicationSecurityConfig {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final ApplicationUserService userService;
+
     @Autowired
-    public ApplicationSecurityConfig( final PasswordEncoder passwordEncoder ) {
+    public ApplicationSecurityConfig(
+            final PasswordEncoder passwordEncoder, final ApplicationUserService userService ) {
         this.passwordEncoder = passwordEncoder;
+        this.userService = userService;
     }
 
     @Bean
@@ -75,26 +77,16 @@ public class ApplicationSecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        final UserDetails user = User.builder().username( "vgarcez" )
-                .password( passwordEncoder.encode( "password" ) )
-                //.roles( STUDENT.name() )
-                .authorities( STUDENT.getGrantedAuthorities() )
-                .build();
-
-        final UserDetails admin = User.builder().username( "bmilitzer" )
-                .password( passwordEncoder.encode( "password" ) )
-                //.roles( ADMIN.name() )
-                .authorities( ADMIN.getGrantedAuthorities() )
-                .build();
-
-        final UserDetails adminTrainee = User.builder().username( "tgarcez" )
-                .password( passwordEncoder.encode( "password" ) )
-                //.roles( ADMIN_TRAINEE.name() )
-                .authorities( ADMIN_TRAINEE.getGrantedAuthorities() )
-                .build();
-
-        return new InMemoryUserDetailsManager( user, admin, adminTrainee );
+    public AuthenticationManager authenticationManager( final AuthenticationConfiguration configuration ) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        final DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder( this.passwordEncoder );
+        provider.setUserDetailsService( this.userService );
+
+        return provider;
+    }
 }
